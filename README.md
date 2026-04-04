@@ -1,8 +1,79 @@
+[Jump to English Explanation](#English)
+
+# Zenn Markdown ポストエディター
+
+Zenn Markdown Post Editor は、Zenn.dev 風の Markdown 編集体験を WordPress 上で再現するための、完全無料のプラグインです。
+
+このプラグインは、WordPress 管理画面の中で Zenn に近い書き心地と表示を実現することを目的にしています。
+
+### 無料で使えます
+
+このプラグインは完全無料です。
+
+- 有料プランなし
+- ライセンスキーなし
+- 利用制限なし
+- サブスクリプション不要
+
+自分の WordPress 環境で自由に利用、改変、管理できます。
+
+### 再現を目指している内容
+
+このプラグインは、Zenn.dev の Markdown 記法や表示スタイルをできるだけ細かく再現することを目指しています。
+
+- コードブロック
+- ファイル名付きコードブロック
+- diff コードブロック
+- シンタックスハイライト
+- コードのコピーボタン
+- `$$ ... $$` の KaTeX ブロック数式
+- `$ ... $` の KaTeX インライン数式
+- 脚注
+- `~~...~~` の取り消し線
+- `<!-- ... -->` の編集用コメント
+- Zenn 風 message ブロック
+- Zenn 風 details ブロック
+- カード型埋め込み
+- YouTube 埋め込み
+- X 埋め込み
+- GitHub ファイル埋め込み
+- GitHub Gist 埋め込み
+
+### このプラグインの目的
+
+単に Markdown を WordPress で使えるようにするだけではなく、Zenn.dev に近い執筆体験を WordPress の中で実現することが目的です。
+
+特に、Zenn 独自記法や埋め込み表現を含めて、Zenn に近い感覚で記事を書けることを重視しています。
+
+### 注意
+
+- このプラグインは非公式の独立した WordPress プラグインであり、Zenn.dev とは提携していません。
+- 一部の埋め込みは、X のウィジェット、GitHub API、favicon 取得など、外部サービスへのアクセスに依存します。
+- すべての挙動が完全に Zenn と一致することを保証するものではありませんが、できるだけ細かく近づけることを目指しています。
+
+### 未対応
+
+現在、以下の埋め込みには対応していません。
+
+- CodePen
+- SlideShare
+- SpeakerDeck
+- Docswell
+- JSFiddle
+- CodeSandbox
+- StackBlitz
+- Figma
+- blueprintUE
+
+また、Mermaid.js のダイアグラムにも対応していません。
+
+---
+
+## English
+
 # Zenn Markdown Post Editor
 
 Totally free WordPress plugin that imitates the Zenn.dev style Markdown editing and rendering experience.
-
-[日本語の説明はこちら](#日本語)
 
 ## Overview
 
@@ -55,6 +126,22 @@ The goal is to make WordPress feel close to writing on Zenn.dev, including the c
 - Some embeds depend on external services at runtime, such as X widgets, GitHub content APIs, and favicon fetching.
 - Rendering may not be 100% identical to Zenn in every edge case, but the plugin aims to imitate the style and authoring flow in detail.
 
+## Not Supported
+
+The following embeds are currently not supported:
+
+- CodePen
+- SlideShare
+- SpeakerDeck
+- Docswell
+- JSFiddle
+- CodeSandbox
+- StackBlitz
+- Figma
+- blueprintUE
+
+Mermaid.js diagrams are also not supported.
+
 ## Files
 
 - Main plugin file: `markdown-post-editor.php`
@@ -63,56 +150,3 @@ The goal is to make WordPress feel close to writing on Zenn.dev, including the c
 - Embed rendering: `assets/embed-renderer.js`
 - Code highlighting: `assets/code-highlighter.js`
 - Math rendering: `assets/math-renderer.js`
-
----
-
-## 日本語
-
-Zenn Markdown Post Editor は、Zenn.dev 風の Markdown 編集体験を WordPress 上で再現するための、完全無料のプラグインです。
-
-このプラグインは、WordPress 管理画面の中で Zenn に近い書き心地と表示を実現することを目的にしています。
-
-### 無料で使えます
-
-このプラグインは完全無料です。
-
-- 有料プランなし
-- ライセンスキーなし
-- 利用制限なし
-- サブスクリプション不要
-
-自分の WordPress 環境で自由に利用、改変、管理できます。
-
-### 再現を目指している内容
-
-このプラグインは、Zenn.dev の Markdown 記法や表示スタイルをできるだけ細かく再現することを目指しています。
-
-- コードブロック
-- ファイル名付きコードブロック
-- diff コードブロック
-- シンタックスハイライト
-- コードのコピーボタン
-- `$$ ... $$` の KaTeX ブロック数式
-- `$ ... $` の KaTeX インライン数式
-- 脚注
-- `~~...~~` の取り消し線
-- `<!-- ... -->` の編集用コメント
-- Zenn 風 message ブロック
-- Zenn 風 details ブロック
-- カード型埋め込み
-- YouTube 埋め込み
-- X 埋め込み
-- GitHub ファイル埋め込み
-- GitHub Gist 埋め込み
-
-### このプラグインの目的
-
-単に Markdown を WordPress で使えるようにするだけではなく、Zenn.dev に近い執筆体験を WordPress の中で実現することが目的です。
-
-特に、Zenn 独自記法や埋め込み表現を含めて、Zenn に近い感覚で記事を書けることを重視しています。
-
-### 注意
-
-- このプラグインは非公式の独立した WordPress プラグインであり、Zenn.dev とは提携していません。
-- 一部の埋め込みは、X のウィジェット、GitHub API、favicon 取得など、外部サービスへのアクセスに依存します。
-- すべての挙動が完全に Zenn と一致することを保証するものではありませんが、できるだけ細かく近づけることを目指しています。
