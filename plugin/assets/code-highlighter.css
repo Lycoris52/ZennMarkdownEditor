@@ -1,0 +1,150 @@
+.mpe-code-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0;
+}
+
+.mpe-code-block {
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+
+.mpe-code-header {
+  display: block;
+  width: fit-content;
+  padding: 5px 10px;
+  background: #3a424d;
+  border: 1px solid #30363d;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 0;
+  color: #c9d1d9;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.mpe-code-shell-has-header .mpe-code-block {
+  border-top: 0;
+  border-top-left-radius: 0;
+}
+
+.mpe-code-body pre,
+.mpe-code-body .shiki {
+  margin: 0;
+  border-radius: 0;
+  overflow: auto;
+}
+
+.mpe-code-body .shiki {
+  padding: 14px 16px;
+  line-height: 1.3;
+}
+
+.mpe-code-body .shiki code {
+  display: block;
+  line-height: 0;
+}
+
+.mpe-code-body .shiki .line {
+  display: block;
+  line-height: 1.3;
+}
+
+.mpe-code-body .shiki .mpe-diff-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  width: calc(100% + 32px);
+  margin: 0 -16px;
+  padding: 0 16px;
+  line-height: 1.3;
+}
+
+.mpe-code-body .shiki .mpe-diff-marker,
+.mpe-code-body .shiki .mpe-diff-content {
+  display: block;
+}
+
+.mpe-code-body .shiki .mpe-diff-marker {
+  flex: 0 0 auto;
+  width: auto;
+  user-select: none;
+  opacity: 0.9;
+}
+
+.mpe-code-body .shiki .mpe-diff-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mpe-code-body .shiki .mpe-diff-add {
+  background: rgba(46, 160, 67, 0.18);
+}
+
+.mpe-code-body .shiki .mpe-diff-remove {
+  background: rgba(248, 81, 73, 0.18);
+}
+
+.mpe-code-body .shiki .mpe-diff-meta {
+  background: rgba(56, 139, 253, 0.14);
+}
+
+.mpe-code-body {
+  position: relative;
+}
+
+.mpe-code-copy {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  pointer-events: none;
+  border: 1px solid #4b5563;
+  background: rgba(58, 66, 77, 0.92);
+  color: #d1d5db;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  z-index: 2;
+}
+
+.mpe-code-shell:hover .mpe-code-copy,
+.mpe-code-copy:focus {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mpe-code-body code {
+  font-family: Consolas, Monaco, monospace;
+  font-size: 13px;
+}
+
+.mpe-math-block {
+  margin: 16px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.mpe-math-block .katex-display {
+  margin: 0;
+}
+
+.mpe-math-inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.mpe-math-block.mpe-math-error {
+  font-family: Consolas, Monaco, monospace;
+  white-space: pre-wrap;
+}
+
+.mpe-math-inline.mpe-math-error {
+  font-family: Consolas, Monaco, monospace;
+}

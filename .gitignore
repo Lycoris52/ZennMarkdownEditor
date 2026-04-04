@@ -1,0 +1,5 @@
+*
+!.gitignore
+!plugin/
+!plugin/**
+plugin/node_modules/
