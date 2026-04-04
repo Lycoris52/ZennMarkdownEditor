@@ -1,8 +1,8 @@
 [Jump to English Explanation](#English)
 
-# Zenn Markdown ポストエディター
+# Zenn Wordpress Markdown ポストエディター
 
-Zenn Markdown Post Editor は、Zenn.dev 風の Markdown 編集体験を WordPress 上で再現するための、完全無料のプラグインです。
+Zenn Wordpress Markdown Post Editor は、Zenn.dev 風の Markdown 編集体験を WordPress 上で再現するための、完全無料のプラグインです。
 
 このプラグインは、WordPress 管理画面の中で Zenn に近い書き心地と表示を実現することを目的にしています。
 
@@ -45,6 +45,23 @@ Zenn Markdown Post Editor は、Zenn.dev 風の Markdown 編集体験を WordPre
 
 特に、Zenn 独自記法や埋め込み表現を含めて、Zenn に近い感覚で記事を書けることを重視しています。
 
+
+---
+
+### インストール方法
+
+1. `markdown-post-editor` フォルダを WordPress の `wp-content/plugins/` に配置します。
+2. WordPress 管理画面の `プラグイン` を開きます。
+3. `Zenn Markdown Post Editor` を有効化します。
+
+ZIP 形式でインストールする場合:
+
+1. `markdown-post-editor` フォルダを zip 化します。
+2. WordPress 管理画面で `プラグイン > 新規追加 > プラグインのアップロード` を開きます。
+3. zip ファイルをアップロードして有効化します。
+
+---
+
 ### 注意
 
 - このプラグインは非公式の独立した WordPress プラグインであり、Zenn.dev とは提携していません。
@@ -69,9 +86,15 @@ Zenn Markdown Post Editor は、Zenn.dev 風の Markdown 編集体験を WordPre
 
 ---
 
+補足:
+
+- 数式やコードハイライト用の主要アセットはプラグイン内に同梱されています。
+- 一部の埋め込み機能は外部サービスへのアクセスに依存します。X.com 埋め込みなど
+
+---
 ## English
 
-# Zenn Markdown Post Editor
+# Zenn Wordpress Markdown Post Editor
 
 Totally free WordPress plugin that imitates the Zenn.dev style Markdown editing and rendering experience.
 
@@ -91,6 +114,23 @@ This plugin is totally free.
 - No subscription requirement
 
 You can use it, modify it, and host it in your own WordPress installation.
+
+## Installation
+
+1. Put the `markdown-post-editor` folder into `wp-content/plugins/` in your WordPress installation.
+2. Open `Plugins` in the WordPress admin.
+3. Activate `Zenn Markdown Post Editor`.
+
+If you want to install from a zip file:
+
+1. Zip the `markdown-post-editor` folder.
+2. In WordPress admin, open `Plugins > Add New > Upload Plugin`.
+3. Upload the zip file and activate it.
+
+Notes:
+
+- Core assets for math and code highlighting are already bundled in the plugin.
+- Some embed features still depend on external services at runtime.
 
 ## What It Tries To Reproduce
 
