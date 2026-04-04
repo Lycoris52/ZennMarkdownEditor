@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Markdown Post Editor
- * Description: Create and edit WordPress posts from a dedicated Markdown editor with live preview and clipboard image uploads.
+ * Description: Zenn Style Markdown editor
  * Version: 0.1.0
- * Author: Codex
+ * Author: Lycoris52
  */
 
 if (!defined('ABSPATH')) {
@@ -267,7 +267,7 @@ final class MPE_Plugin {
 			echo '<td>' . esc_html($has_markdown ? __('Markdown', 'mpe') : __('Legacy content', 'mpe')) . '</td>';
 			echo '<td>';
 			echo '<a class="button button-secondary" href="' . esc_url($edit_url) . '">' . esc_html__('Edit in Markdown', 'mpe') . '</a> ';
-			echo '<a class="button button-link" href="' . esc_url(get_permalink($post)) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('View', 'mpe') . '</a>';
+			echo '<a class="button button-secondary" href="' . esc_url(get_permalink($post)) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('View', 'mpe') . '</a>';
 			echo '</td>';
 			echo '</tr>';
 		}
@@ -433,4 +433,3 @@ final class MPE_Plugin {
 }
 
 MPE_Plugin::bootstrap();
-
