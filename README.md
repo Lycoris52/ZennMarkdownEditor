@@ -1,5 +1,7 @@
 [Jump to English Explanation](#English)
 
+![sample](sample.png)
+
 # Zenn Wordpress Markdown ポストエディター
 
 Zenn Wordpress Markdown Post Editor は、Zenn.dev 風の Markdown 編集体験を WordPress 上で再現するための、完全無料のプラグインです。

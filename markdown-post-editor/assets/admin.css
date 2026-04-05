@@ -145,11 +145,17 @@
 .mpe-taxonomy-item {
   display: flex;
   gap: 8px;
-  align-items: flex-start;
+  align-items: center;
+}
+
+.mpe-taxonomy-item input[type="checkbox"] {
+  margin: 0;
+  flex: 0 0 auto;
 }
 
 .mpe-taxonomy-item span {
   font-weight: 400;
+  line-height: 1.4;
 }
 
 #mpe-save-post {
