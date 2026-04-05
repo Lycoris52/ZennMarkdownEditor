@@ -88,8 +88,8 @@ ZIP 形式でインストールする場合:
 
 補足:
 
-- 数式やコードハイライト用の主要アセットはプラグイン内に同梱されています。
-- 一部の埋め込み機能は外部サービスへのアクセスに依存します。X.com 埋め込みなど
+- 数式(KaTeX)やコードハイライト用(Shiki)の主要ライブラリーはプラグイン内に同梱されています。外部からライブラリーダウンロードはありません。
+- 一部の埋め込み機能は外部サービスへのアクセスに依存します。X.com 埋め込みなど。
 
 ---
 ## English
@@ -129,7 +129,7 @@ If you want to install from a zip file:
 
 Notes:
 
-- Core assets for math and code highlighting are already bundled in the plugin.
+- Core library for math (KaTeX) and code highlighting (Shiki) are already bundled in the plugin.
 - Some embed features still depend on external services at runtime.
 
 ## What It Tries To Reproduce
