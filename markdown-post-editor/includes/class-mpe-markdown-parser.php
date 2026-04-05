@@ -16,6 +16,7 @@ final class MPE_Markdown_Parser {
 			'items' => array(),
 			'inline_next' => 1,
 		);
+		$heading_ids = array();
 		$html = '';
 		$paragraph = array();
 		$list_type = null;
@@ -29,6 +30,7 @@ final class MPE_Markdown_Parser {
 		$code_filename = '';
 		$code_lines = array();
 		$math_lines = array();
+		$indented_code_lines = array();
 
 		$line_count = count($lines);
 		for ($line_index = 0; $line_index < $line_count; $line_index++) {
@@ -46,6 +48,21 @@ final class MPE_Markdown_Parser {
 				}
 
 				continue;
+			}
+
+			if (!empty($indented_code_lines)) {
+				if (preg_match('/^(?:\t| {4})(.*)$/', $line, $indented_matches) === 1) {
+					$indented_code_lines[] = $indented_matches[1];
+					continue;
+				}
+
+				if (trim($line) === '') {
+					$indented_code_lines[] = '';
+					continue;
+				}
+
+				$html .= self::render_code_block(implode("\n", $indented_code_lines), 'text', '', '');
+				$indented_code_lines = array();
 			}
 
 			if (preg_match('/^(:{3,})(message|details)(?:\s+(.*))?$/', $line, $custom_matches) === 1) {
@@ -104,6 +121,15 @@ final class MPE_Markdown_Parser {
 				continue;
 			}
 
+			if (preg_match('/^(?:\t| {4})(.*)$/', $line, $indented_matches) === 1) {
+				self::flush_paragraph($html, $paragraph, $footnotes, $footnote_state);
+				self::flush_list($html, $list_type, $list_items, $footnotes, $footnote_state);
+				self::flush_blockquote($html, $blockquote, $footnotes, $footnote_state);
+				self::flush_table($html, $table_lines, $footnotes, $footnote_state);
+				$indented_code_lines[] = $indented_matches[1];
+				continue;
+			}
+
 			if (trim($line) === '$$') {
 				self::flush_paragraph($html, $paragraph, $footnotes, $footnote_state);
 				self::flush_list($html, $list_type, $list_items, $footnotes, $footnote_state);
@@ -128,7 +154,8 @@ final class MPE_Markdown_Parser {
 				self::flush_blockquote($html, $blockquote, $footnotes, $footnote_state);
 				self::flush_table($html, $table_lines, $footnotes, $footnote_state);
 				$level = strlen($matches[1]);
-				$html .= sprintf('<h%d>%s</h%d>', $level, self::render_inline($matches[2], false, $footnotes, $footnote_state), $level);
+				$heading_id = self::generate_heading_id($matches[2], $heading_ids);
+				$html .= sprintf('<h%d id="%s">%s</h%d>', $level, esc_attr($heading_id), self::render_inline($matches[2], false, $footnotes, $footnote_state), $level);
 				continue;
 			}
 
@@ -186,6 +213,10 @@ final class MPE_Markdown_Parser {
 
 		if ($in_code_block) {
 			$html .= self::render_code_block(implode("\n", $code_lines), $code_lang, $code_filename, $code_diff_lang);
+		}
+
+		if (!empty($indented_code_lines)) {
+			$html .= self::render_code_block(implode("\n", $indented_code_lines), 'text', '', '');
 		}
 
 		if ($in_math_block) {
@@ -462,7 +493,7 @@ final class MPE_Markdown_Parser {
 	}
 
 	private static function is_table_line(string $line): bool {
-		return substr_count($line, '|') >= 2;
+		return strpos($line, '|') !== false;
 	}
 
 	private static function is_table_separator(string $line): bool {
@@ -472,7 +503,7 @@ final class MPE_Markdown_Parser {
 		}
 
 		foreach ($cells as $cell) {
-			if (preg_match('/^:?-{3,}:?$/', trim($cell)) !== 1) {
+			if (preg_match('/^:?-+:?$/', trim($cell)) !== 1) {
 				return false;
 			}
 		}
@@ -522,10 +553,52 @@ final class MPE_Markdown_Parser {
 		}
 
 		return array(
-			'lang' => $lang !== '' ? $lang : 'text',
-			'diff_lang' => $diff_lang,
+			'lang' => $lang !== '' ? strtolower($lang) : 'text',
+			'diff_lang' => strtolower($diff_lang),
 			'filename' => $filename,
 		);
+	}
+
+	private static function plain_text_from_inline(string $text): string {
+		$text = preg_replace('/!\[([^\]]*)\]\((.*?)\)/', '$1', $text);
+		$text = preg_replace('/\[([^\]]+)\]\((.*?)\)/', '$1', $text);
+		$text = preg_replace('/`([^`]+)`/', '$1', $text);
+		$text = preg_replace('/\^\[([^\]]+)\]|\[\^([^\]]+)\]/', '', $text);
+		$text = preg_replace('/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/s', '$1', $text);
+		$text = preg_replace('/[*_~#]+/', '', $text);
+		$text = html_entity_decode(wp_strip_all_tags($text), ENT_QUOTES, 'UTF-8');
+		return trim((string) preg_replace('/\s+/u', ' ', $text));
+	}
+
+	private static function normalize_anchor_target(string $text): string {
+		$normalized = self::plain_text_from_inline($text);
+		$normalized = trim((string) preg_replace('/\s+/u', ' ', $normalized));
+
+		if ($normalized === '') {
+			return 'mpe-section';
+		}
+
+		if (preg_match('/^[A-Za-z0-9 _-]+$/', $normalized) === 1) {
+			$ascii_slug = strtolower($normalized);
+			$ascii_slug = preg_replace('/\s+/', '-', $ascii_slug);
+			$ascii_slug = preg_replace('/[^a-z0-9_-]/', '', $ascii_slug);
+			$ascii_slug = trim((string) $ascii_slug, '-');
+			return $ascii_slug !== '' ? $ascii_slug : 'mpe-section';
+		}
+
+		return 'mpe-' . str_replace('%', '-', strtolower(rawurlencode($normalized)));
+	}
+
+	private static function generate_heading_id(string $text, array &$heading_ids): string {
+		$base = self::normalize_anchor_target($text);
+
+		if (!isset($heading_ids[$base])) {
+			$heading_ids[$base] = 0;
+			return $base;
+		}
+
+		$heading_ids[$base]++;
+		return $base . '-' . $heading_ids[$base];
 	}
 
 	private static function render_code_block(string $code, string $lang, string $filename, string $diff_lang = ''): string {
@@ -671,11 +744,14 @@ final class MPE_Markdown_Parser {
 		);
 
 		$text = preg_replace_callback(
-			'/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/',
+			'/\[([^\]]+)\]\((https?:\/\/[^\s)]+|#[^)]+)\)/',
 			static function (array $matches) use (&$placeholders, &$index): string {
 				$token = '@@MPE' . $index . '@@';
 				$index++;
-				$placeholders[$token] = '<a href="' . esc_url($matches[2]) . '">' . esc_html($matches[1]) . '</a>';
+				$href = isset($matches[2][0]) && $matches[2][0] === '#'
+					? '#' . self::normalize_anchor_target(substr($matches[2], 1))
+					: esc_url($matches[2]);
+				$placeholders[$token] = '<a href="' . esc_attr($href) . '">' . esc_html($matches[1]) . '</a>';
 				return $token;
 			},
 			$text

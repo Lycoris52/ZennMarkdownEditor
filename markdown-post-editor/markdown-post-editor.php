@@ -29,6 +29,9 @@ final class MPE_Plugin {
 		add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
 		add_action('wp_ajax_mpe_save_post', array($this, 'ajax_save_post'));
 		add_action('wp_ajax_mpe_upload_image', array($this, 'ajax_upload_image'));
+		add_action('the_post', array($this, 'prepare_frontend_post_content'));
+		add_filter('the_posts', array($this, 'prepare_frontend_posts'), 9, 2);
+		add_filter('the_content', array($this, 'render_frontend_content'), 999);
 	}
 
 	public function register_admin_menu(): void {
@@ -49,6 +52,7 @@ final class MPE_Plugin {
 		}
 
 		$asset_version = '0.1.5';
+		wp_enqueue_media();
 
 		wp_enqueue_style(
 			'mpe-katex',
@@ -114,7 +118,7 @@ final class MPE_Plugin {
 		wp_enqueue_script(
 			'mpe-admin',
 			plugins_url('assets/admin.js', __FILE__),
-			array('mpe-code-highlighter', 'mpe-math-renderer', 'mpe-embed-renderer'),
+			array('mpe-code-highlighter', 'mpe-math-renderer', 'mpe-embed-renderer', 'media-editor', 'media-views'),
 			$asset_version,
 			true
 		);
@@ -138,6 +142,8 @@ final class MPE_Plugin {
 				'saveButtonDirtyText' => __('Save Change', 'mpe'),
 				'saveButtonSavingText' => __('Saving', 'mpe'),
 				'saveButtonSavedText' => __('Post Saved', 'mpe'),
+				'featuredImageTitle' => __('Select featured image', 'mpe'),
+				'featuredImageButton' => __('Use this image', 'mpe'),
 			)
 		);
 	}
@@ -205,6 +211,72 @@ final class MPE_Plugin {
 			$asset_version,
 			true
 		);
+	}
+
+	public function render_frontend_content(string $content): string {
+		if (is_admin() || !is_singular('post')) {
+			return $content;
+		}
+
+		$post_id = get_the_ID();
+		if (!$post_id) {
+			$queried_object_id = get_queried_object_id();
+			$post_id = $queried_object_id ? (int) $queried_object_id : 0;
+		}
+
+		if (!$post_id) {
+			return $content;
+		}
+
+		$markdown = get_post_meta($post_id, self::MARKDOWN_META_KEY, true);
+		if (!is_string($markdown) || $markdown === '') {
+			return $content;
+		}
+
+		return MPE_Markdown_Parser::render($markdown);
+	}
+
+	public function prepare_frontend_post_content(\WP_Post $post): void {
+		if (is_admin() || !is_singular('post') || !$post instanceof \WP_Post || $post->post_type !== 'post') {
+			return;
+		}
+
+		if ((int) $post->ID !== (int) get_queried_object_id()) {
+			return;
+		}
+
+		$markdown = get_post_meta($post->ID, self::MARKDOWN_META_KEY, true);
+		if (!is_string($markdown) || $markdown === '') {
+			return;
+		}
+
+		$post->post_content = MPE_Markdown_Parser::render($markdown);
+	}
+
+	public function prepare_frontend_posts(array $posts, \WP_Query $query): array {
+		if (is_admin() || !is_singular('post') || empty($posts)) {
+			return $posts;
+		}
+
+		$target_post_id = (int) get_queried_object_id();
+		if ($target_post_id <= 0) {
+			return $posts;
+		}
+
+		foreach ($posts as $post) {
+			if (!$post instanceof \WP_Post || $post->post_type !== 'post' || (int) $post->ID !== $target_post_id) {
+				continue;
+			}
+
+			$markdown = get_post_meta($post->ID, self::MARKDOWN_META_KEY, true);
+			if (!is_string($markdown) || $markdown === '') {
+				continue;
+			}
+
+			$post->post_content = MPE_Markdown_Parser::render($markdown);
+		}
+
+		return $posts;
 	}
 
 	public function render_admin_page(): void {
@@ -282,6 +354,10 @@ final class MPE_Plugin {
 		$title = '';
 		$status = 'draft';
 		$is_legacy = false;
+		$featured_image_id = 0;
+		$featured_image_url = '';
+		$selected_categories = array();
+		$tag_names = array();
 
 		if ($post_id > 0) {
 			$post = get_post($post_id);
@@ -293,7 +369,19 @@ final class MPE_Plugin {
 			$status = $post->post_status;
 			$markdown = (string) get_post_meta($post_id, self::MARKDOWN_META_KEY, true);
 			$is_legacy = $markdown === '';
+			$featured_image_id = (int) get_post_thumbnail_id($post_id);
+			$featured_image_url = $featured_image_id > 0 ? (string) wp_get_attachment_image_url($featured_image_id, 'medium') : '';
+			$selected_categories = wp_get_post_categories($post_id, array('fields' => 'ids'));
+			$tag_names = wp_get_post_tags($post_id, array('fields' => 'names'));
 		}
+
+		$all_categories = get_categories(
+			array(
+				'taxonomy' => 'category',
+				'hide_empty' => false,
+			)
+		);
+		$tags_value = implode(', ', $tag_names);
 
 		$preview_html = $markdown !== '' ? MPE_Markdown_Parser::render($markdown) : '<p class="mpe-empty-preview">' . esc_html__('Preview updates as you type.', 'mpe') . '</p>';
 
@@ -312,12 +400,53 @@ final class MPE_Plugin {
 		}
 		echo '</select>';
 		echo '</label>';
-
 		echo '<div class="mpe-actions">';
 		echo '<button type="button" class="button button-primary" id="mpe-save-post">' . esc_html__('Save Post', 'mpe') . '</button>';
 		echo '<button type="button" class="button" id="mpe-preview-page">' . esc_html__('Preview Page', 'mpe') . '</button>';
 		echo '<a class="button" href="' . esc_url(admin_url('admin.php?page=' . self::MENU_SLUG)) . '">' . esc_html__('Back to List', 'mpe') . '</a>';
 		echo '</div>';
+		echo '</div>';
+
+		echo '<div class="mpe-meta-row">';
+		echo '<div class="mpe-inline-meta mpe-inline-featured">';
+		echo '<span>' . esc_html__('Featured Image', 'mpe') . '</span>';
+		echo '<div class="mpe-featured-image-inline">';
+		echo '<div class="mpe-featured-image-preview mpe-featured-image-preview-inline">';
+		if ($featured_image_url !== '') {
+			echo '<img id="mpe-featured-image-preview" src="' . esc_url($featured_image_url) . '" alt="" />';
+			echo '<div id="mpe-featured-image-placeholder" class="mpe-featured-image-placeholder" style="display:none;">' . esc_html__('No featured image selected.', 'mpe') . '</div>';
+		} else {
+			echo '<div id="mpe-featured-image-placeholder" class="mpe-featured-image-placeholder">' . esc_html__('No featured image selected.', 'mpe') . '</div>';
+			echo '<img id="mpe-featured-image-preview" src="" alt="" style="display:none;" />';
+		}
+		echo '</div>';
+		echo '<div class="mpe-featured-image-actions">';
+		echo '<button type="button" class="button" id="mpe-featured-image-select">' . esc_html__('Select Image', 'mpe') . '</button>';
+		echo '<button type="button" class="button button-link-delete" id="mpe-featured-image-remove"' . ($featured_image_id > 0 ? '' : ' style="display:none;"') . '>' . esc_html__('Remove Image', 'mpe') . '</button>';
+		echo '</div>';
+		echo '<input type="hidden" id="mpe-featured-image-id" value="' . esc_attr((string) $featured_image_id) . '" />';
+		echo '</div>';
+		echo '</div>';
+
+		echo '<div class="mpe-meta-stack">';
+		echo '<div class="mpe-inline-meta mpe-inline-categories">';
+		echo '<span>' . esc_html__('Categories', 'mpe') . '</span>';
+		echo '<div class="mpe-taxonomy-list mpe-taxonomy-list-inline" id="mpe-category-list">';
+		foreach ($all_categories as $category) {
+			echo '<label class="mpe-taxonomy-item">';
+			echo '<input type="checkbox" class="mpe-category-checkbox" value="' . esc_attr((string) $category->term_id) . '"' . checked(in_array((int) $category->term_id, $selected_categories, true), true, false) . ' />';
+			echo '<span>' . esc_html($category->name) . '</span>';
+			echo '</label>';
+		}
+		echo '</div>';
+		echo '</div>';
+
+		echo '<label class="mpe-inline-meta mpe-inline-tags">';
+		echo '<span>' . esc_html__('Tags', 'mpe') . '</span>';
+		echo '<input type="text" id="mpe-post-tags" class="regular-text" value="' . esc_attr($tags_value) . '" placeholder="' . esc_attr__('tag1, tag2, tag3', 'mpe') . '" />';
+		echo '</label>';
+		echo '</div>';
+		echo '<div class="mpe-meta-spacer" aria-hidden="true"></div>';
 		echo '</div>';
 
 		if ($is_legacy) {
@@ -353,6 +482,13 @@ final class MPE_Plugin {
 		$title = isset($_POST['title']) ? sanitize_text_field(wp_unslash($_POST['title'])) : '';
 		$status = isset($_POST['status']) ? sanitize_key(wp_unslash($_POST['status'])) : 'draft';
 		$markdown = isset($_POST['markdown']) ? wp_unslash($_POST['markdown']) : '';
+		$featured_image_id = isset($_POST['featured_image_id']) ? absint($_POST['featured_image_id']) : 0;
+		$categories = isset($_POST['categories']) ? (array) wp_unslash($_POST['categories']) : array();
+		$categories = array_values(array_filter(array_map('absint', $categories)));
+		$tags_raw = isset($_POST['tags']) ? sanitize_text_field(wp_unslash($_POST['tags'])) : '';
+		$tags = array_values(array_filter(array_map('trim', explode(',', $tags_raw)), static function (string $tag): bool {
+			return $tag !== '';
+		}));
 		$allowed_statuses = array('draft', 'pending', 'publish', 'private');
 
 		if (!in_array($status, $allowed_statuses, true)) {
@@ -382,6 +518,16 @@ final class MPE_Plugin {
 		}
 
 		update_post_meta((int) $result, self::MARKDOWN_META_KEY, wp_slash($markdown));
+		wp_set_post_terms((int) $result, $categories, 'category', false);
+		wp_set_post_terms((int) $result, $tags, 'post_tag', false);
+
+		if ($featured_image_id > 0) {
+			update_post_meta((int) $result, '_thumbnail_id', $featured_image_id);
+		} else {
+			delete_post_meta((int) $result, '_thumbnail_id');
+		}
+
+		$saved_featured_image_url = $featured_image_id > 0 ? (string) wp_get_attachment_image_url($featured_image_id, 'medium') : '';
 
 		wp_send_json_success(
 			array(
@@ -389,6 +535,10 @@ final class MPE_Plugin {
 				'editUrl' => admin_url('admin.php?page=' . self::MENU_SLUG . '&view=edit&post_id=' . (int) $result),
 				'viewUrl' => get_permalink((int) $result),
 				'html' => MPE_Markdown_Parser::render($markdown),
+				'featuredImageId' => $featured_image_id,
+				'featuredImageUrl' => $saved_featured_image_url,
+				'categories' => array_map('intval', wp_get_post_categories((int) $result, array('fields' => 'ids'))),
+				'tags' => wp_get_post_tags((int) $result, array('fields' => 'names')),
 				'message' => __('Post saved.', 'mpe'),
 			)
 		);

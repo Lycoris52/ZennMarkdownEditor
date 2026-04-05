@@ -24,11 +24,30 @@
   border: 1px solid #c3d9ee;
   padding: 10px 12px;
   text-align: left;
+  color: inherit;
 }
 
 .mpe-rendered-content th {
-  background: #dff0ff;
+  background: #d7e0e8;
   font-weight: 700;
+  color: #2f343b;
+}
+
+.post_content .mpe-rendered-content table,
+.post_content .mpe-rendered-content td,
+.post_content .mpe-rendered-content th {
+  color: inherit !important;
+}
+
+.post_content .mpe-rendered-content tbody td,
+.post_content .mpe-rendered-content tbody th {
+  color: inherit !important;
+}
+
+.post_content .mpe-rendered-content thead td,
+.post_content .mpe-rendered-content thead th {
+  color: #2f343b !important;
+  background: #d7e0e8 !important;
 }
 
 .mpe-rendered-content .mpe-math-block {
@@ -111,12 +130,16 @@
   padding-bottom: 14px;
 }
 
-.mpe-rendered-content .mpe-embed-link {
+.mpe-rendered-content a.mpe-embed-link {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 180px;
   gap: 16px;
   align-items: stretch;
   margin: 18px 0;
+  width: 100%;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
   padding: 0;
   border: 1px solid #d0d7de;
   border-radius: 10px;
@@ -124,14 +147,17 @@
   color: inherit;
   text-decoration: none;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.mpe-rendered-content .mpe-embed-main {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-main {
   display: block;
   padding: 14px 16px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-.mpe-rendered-content .mpe-embed-label {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-label {
   display: block;
   margin-bottom: 4px;
   color: #1f2328;
@@ -140,7 +166,7 @@
   line-height: 1.35;
 }
 
-.mpe-rendered-content .mpe-embed-url {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-url {
   display: block;
   color: #57606a;
   font-size: 13px;
@@ -148,7 +174,7 @@
   overflow-wrap: anywhere;
 }
 
-.mpe-rendered-content .mpe-embed-site {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-site {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -158,7 +184,7 @@
   line-height: 1.35;
 }
 
-.mpe-rendered-content .mpe-embed-site-icon {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-site-icon {
   width: 16px;
   height: 16px;
   display: inline-flex;
@@ -167,33 +193,39 @@
   flex: 0 0 16px;
 }
 
-.mpe-rendered-content .mpe-embed-site-icon img {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-site-icon img {
   display: block;
   width: 16px;
   height: 16px;
   object-fit: contain;
+  margin: 0;
 }
 
-.mpe-rendered-content .mpe-embed-site-name {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-site-name {
   color: #1f2328;
 }
 
-.mpe-rendered-content .mpe-embed-brand {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-brand {
   display: grid;
   place-items: center;
   padding: 16px;
   background: #f6f8fa;
   text-align: center;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-.mpe-rendered-content .mpe-embed-brand img {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-brand img {
   display: block;
   max-width: 64px;
   max-height: 64px;
   object-fit: contain;
+  width: auto;
+  height: auto;
+  margin: 0;
 }
 
-.mpe-rendered-content .mpe-embed-brand-fallback {
+.mpe-rendered-content a.mpe-embed-link .mpe-embed-brand-fallback {
   display: none;
   color: #57606a;
   font-size: 14px;
@@ -202,6 +234,10 @@
 
 .mpe-rendered-content .mpe-embed-github {
   margin: 18px 0;
+  width: 100%;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
   border: 1px solid #d0d7de;
   border-radius: 10px;
   overflow: hidden;
@@ -300,6 +336,10 @@
 
 .mpe-rendered-content .mpe-embed-gist {
   margin: 18px 0;
+  width: 100%;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
   border: 1px solid #d0d7de;
   background: #fff;
 }
@@ -349,7 +389,7 @@
 }
 
 @media (max-width: 960px) {
-  .mpe-rendered-content .mpe-embed-link {
+  .mpe-rendered-content a.mpe-embed-link {
     grid-template-columns: 1fr;
   }
 }

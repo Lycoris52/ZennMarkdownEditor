@@ -3,6 +3,7 @@
   let isSaving = false;
   let lastSavedSnapshot = "";
   let autosaveTimer = null;
+  let featuredImageFrame = null;
 
   function getSaveButton() {
     return document.getElementById("mpe-save-post");
@@ -81,6 +82,37 @@
     return `<sup class="mpe-footnote-ref" id="${getFootnoteReferenceId(footnoteId, referenceIndex)}"><a href="#${getFootnoteItemId(footnoteId)}">${number}</a></sup>`;
   }
 
+  function plainTextFromInline(text) {
+    return String(text || "")
+      .replace(/!\[([^\]]*)\]\((.*?)\)/g, "$1")
+      .replace(/\[([^\]]+)\]\((.*?)\)/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\^\[([^\]]+)\]|\[\^([^\]]+)\]/g, "")
+      .replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/gs, "$1")
+      .replace(/[*_~#]+/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function normalizeAnchorTarget(text) {
+    const normalized = plainTextFromInline(text).replace(/\s+/g, " ").trim();
+
+    if (!normalized) {
+      return "mpe-section";
+    }
+
+    if (/^[A-Za-z0-9 _-]+$/.test(normalized)) {
+      const asciiSlug = normalized
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9_-]/g, "")
+        .replace(/^-+|-+$/g, "");
+      return asciiSlug || "mpe-section";
+    }
+
+    return `mpe-${encodeURIComponent(normalized).toLowerCase().replace(/%/g, "-")}`;
+  }
+
   function renderInline(text, preserveLineBreaks, footnotes, footnoteState) {
     const safeText = String(text || "");
     const noteMap = footnotes || {};
@@ -101,9 +133,10 @@
       return token;
     });
 
-    output = output.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (_, label, url) {
+    output = output.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|#[^)]+)\)/g, function (_, label, url) {
       const token = `@@MPE${placeholders.length}@@`;
-      placeholders.push(`<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`);
+      const href = url.charAt(0) === "#" ? `#${normalizeAnchorTarget(url.slice(1))}` : url;
+      placeholders.push(`<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`);
       return token;
     });
 
@@ -162,6 +195,7 @@
       items: {},
       inlineNext: 1
     };
+    const headingIds = {};
     let html = "";
     let paragraph = [];
     let listType = null;
@@ -175,6 +209,17 @@
     let codeFilename = "";
     let codeLines = [];
     let mathLines = [];
+    let indentedCodeLines = [];
+
+    function generateHeadingId(text) {
+      const base = normalizeAnchorTarget(text);
+      if (!Object.prototype.hasOwnProperty.call(headingIds, base)) {
+        headingIds[base] = 0;
+        return base;
+      }
+      headingIds[base] += 1;
+      return `${base}-${headingIds[base]}`;
+    }
 
     function consumeZennBlock(sourceLines, startIndex, colonCount, type, argument) {
       const content = [];
@@ -379,23 +424,23 @@
         const diffTarget = segments[1] || "";
         const separatorIndex = diffTarget.indexOf(":");
         if (separatorIndex === -1) {
-          return { lang: "diff", diffLang: diffTarget || "text", filename: "" };
+          return { lang: "diff", diffLang: (diffTarget || "text").toLowerCase(), filename: "" };
         }
 
         return {
           lang: "diff",
-          diffLang: diffTarget.slice(0, separatorIndex).trim() || "text",
+          diffLang: (diffTarget.slice(0, separatorIndex).trim() || "text").toLowerCase(),
           filename: diffTarget.slice(separatorIndex + 1).trim()
         };
       }
 
       const separatorIndex = trimmed.indexOf(":");
       if (separatorIndex === -1) {
-        return { lang: trimmed, diffLang: "", filename: "" };
+        return { lang: trimmed.toLowerCase(), diffLang: "", filename: "" };
       }
 
       return {
-        lang: trimmed.slice(0, separatorIndex).trim() || "text",
+        lang: (trimmed.slice(0, separatorIndex).trim() || "text").toLowerCase(),
         diffLang: "",
         filename: trimmed.slice(separatorIndex + 1).trim()
       };
@@ -445,7 +490,7 @@
     }
 
     function isTableLine(line) {
-      return (line.match(/\|/g) || []).length >= 2;
+      return line.indexOf("|") !== -1;
     }
 
     function splitTableRow(line) {
@@ -463,7 +508,7 @@
       if (!cells.length) {
         return false;
       }
-      return cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+      return cells.every((cell) => /^:?-+:?$/.test(cell));
     }
 
     function flushTable() {
@@ -511,6 +556,22 @@
           codeLines.push(line);
         }
         continue;
+      }
+
+      if (indentedCodeLines.length) {
+        const indentedCodeMatch = line.match(/^(?:\t| {4})(.*)$/);
+        if (indentedCodeMatch) {
+          indentedCodeLines.push(indentedCodeMatch[1]);
+          continue;
+        }
+
+        if (!line.trim()) {
+          indentedCodeLines.push("");
+          continue;
+        }
+
+        html += renderCodeBlock(indentedCodeLines.join("\n"), "text", "", "");
+        indentedCodeLines = [];
       }
 
       if (inMathBlock) {
@@ -569,6 +630,16 @@
         continue;
       }
 
+      const indentedCodeMatch = line.match(/^(?:\t| {4})(.*)$/);
+      if (indentedCodeMatch) {
+        flushParagraph();
+        flushList();
+        flushBlockquote();
+        flushTable();
+        indentedCodeLines.push(indentedCodeMatch[1]);
+        continue;
+      }
+
       if (line.trim() === "$$") {
         flushParagraph();
         flushList();
@@ -593,7 +664,8 @@
         flushBlockquote();
         flushTable();
         const level = headingMatch[1].length;
-        html += `<h${level}>${renderInline(headingMatch[2], false, footnotes, footnoteState)}</h${level}>`;
+        const headingId = generateHeadingId(headingMatch[2]);
+        html += `<h${level} id="${escapeHtml(headingId)}">${renderInline(headingMatch[2], false, footnotes, footnoteState)}</h${level}>`;
         continue;
       }
 
@@ -656,6 +728,10 @@
       html += renderCodeBlock(codeLines.join("\n"), codeLang, codeFilename, codeDiffLang);
     }
 
+    if (indentedCodeLines.length) {
+      html += renderCodeBlock(indentedCodeLines.join("\n"), "text", "", "");
+    }
+
     if (inMathBlock) {
       html += renderMathBlock(mathLines.join("\n"));
     }
@@ -683,17 +759,27 @@
     const status = document.getElementById("mpe-post-status");
     const editor = document.getElementById("mpe-markdown-editor");
     const postId = document.getElementById("mpe-post-id");
+    const featuredImageId = document.getElementById("mpe-featured-image-id");
+    const tags = document.getElementById("mpe-post-tags");
+    const categories = Array.from(document.querySelectorAll(".mpe-category-checkbox:checked")).map(function (checkbox) {
+      return checkbox.value;
+    }).sort();
 
     return {
       title,
       status,
       editor,
       postId,
+      featuredImageId,
+      tags,
       snapshot: JSON.stringify({
         title: title ? title.value : "",
         status: status ? status.value : "",
         markdown: editor ? editor.value : "",
-        postId: postId ? postId.value : "0"
+        postId: postId ? postId.value : "0",
+        featuredImageId: featuredImageId ? featuredImageId.value : "0",
+        tags: tags ? tags.value : "",
+        categories
       })
     };
   }
@@ -735,6 +821,30 @@
     }
   }
 
+  function handlePreviewAnchorClick(event) {
+    const link = event.target.closest('a[href^="#"]');
+    if (!link) {
+      return;
+    }
+
+    const href = link.getAttribute("href") || "";
+    if (href.length <= 1) {
+      return;
+    }
+
+    const targetId = decodeURIComponent(href.slice(1));
+    const target = document.getElementById(targetId);
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
   function insertAtCursor(textarea, text) {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -743,6 +853,65 @@
     textarea.focus();
     updatePreview();
     markDirty();
+  }
+
+  function updateFeaturedImageUi(image) {
+    const imageIdInput = document.getElementById("mpe-featured-image-id");
+    const preview = document.getElementById("mpe-featured-image-preview");
+    const placeholder = document.getElementById("mpe-featured-image-placeholder");
+    const removeButton = document.getElementById("mpe-featured-image-remove");
+    if (!imageIdInput || !preview || !removeButton) {
+      return;
+    }
+
+    if (image && image.id) {
+      imageIdInput.value = String(image.id);
+      preview.src = image.url || "";
+      preview.style.display = image.url ? "block" : "none";
+      removeButton.style.display = "";
+      if (placeholder) {
+        placeholder.style.display = "none";
+      }
+    } else {
+      imageIdInput.value = "0";
+      preview.src = "";
+      preview.style.display = "none";
+      removeButton.style.display = "none";
+      if (placeholder) {
+        placeholder.style.display = "grid";
+      }
+    }
+  }
+
+  function openFeaturedImagePicker() {
+    if (!window.wp || !window.wp.media) {
+      setStatus("WordPress media library is unavailable on this page.", true);
+      return;
+    }
+
+    if (!featuredImageFrame) {
+      featuredImageFrame = window.wp.media({
+        title: MPE_Admin.featuredImageTitle,
+        button: { text: MPE_Admin.featuredImageButton },
+        multiple: false,
+        library: { type: "image" }
+      });
+
+      featuredImageFrame.on("select", function () {
+        const attachment = featuredImageFrame.state().get("selection").first();
+        if (!attachment) {
+          return;
+        }
+        const image = attachment.toJSON();
+        updateFeaturedImageUi({
+          id: image.id,
+          url: (image.sizes && image.sizes.medium && image.sizes.medium.url) || image.url || ""
+        });
+        markDirty();
+      });
+    }
+
+    featuredImageFrame.open();
   }
 
   async function uploadClipboardImage(file) {
@@ -815,6 +984,13 @@
     formData.append("status", state.status.value);
     formData.append("markdown", state.editor.value);
     formData.append("post_id", state.postId.value || "0");
+    formData.append("featured_image_id", state.featuredImageId ? state.featuredImageId.value : "0");
+    if (state.tags) {
+      formData.append("tags", state.tags.value);
+    }
+    document.querySelectorAll(".mpe-category-checkbox:checked").forEach(function (checkbox) {
+      formData.append("categories[]", checkbox.value);
+    });
 
     try {
       const response = await fetch(MPE_Admin.ajaxUrl, {
@@ -830,6 +1006,20 @@
 
       state.postId.value = String(payload.data.postId);
       window.history.replaceState({}, "", payload.data.editUrl);
+      updateFeaturedImageUi({
+        id: payload.data.featuredImageId || 0,
+        url: payload.data.featuredImageUrl || ""
+      });
+      const tagField = document.getElementById("mpe-post-tags");
+      if (tagField && Array.isArray(payload.data.tags)) {
+        tagField.value = payload.data.tags.join(", ");
+      }
+      if (Array.isArray(payload.data.categories)) {
+        const selectedCategories = payload.data.categories.map(String);
+        document.querySelectorAll(".mpe-category-checkbox").forEach(function (checkbox) {
+          checkbox.checked = selectedCategories.indexOf(checkbox.value) !== -1;
+        });
+      }
       preview.innerHTML = payload.data.html;
       if (window.MPECodeHighlighter) {
         window.MPECodeHighlighter.highlightWithin(preview);
@@ -892,8 +1082,12 @@
     const previewButton = document.getElementById("mpe-preview-page");
     const title = document.getElementById("mpe-post-title");
     const status = document.getElementById("mpe-post-status");
+    const tags = document.getElementById("mpe-post-tags");
+    const featuredImageSelect = document.getElementById("mpe-featured-image-select");
+    const featuredImageRemove = document.getElementById("mpe-featured-image-remove");
+    const categoryCheckboxes = document.querySelectorAll(".mpe-category-checkbox");
 
-    if (!editor || !saveButton || !previewButton || !title || !status) {
+    if (!editor || !saveButton || !previewButton || !title || !status || !tags || !featuredImageSelect || !featuredImageRemove) {
       return;
     }
 
@@ -907,8 +1101,18 @@
       markDirty();
     });
     editor.addEventListener("paste", handlePaste);
+    document.addEventListener("click", handlePreviewAnchorClick);
     title.addEventListener("input", markDirty);
     status.addEventListener("change", markDirty);
+    tags.addEventListener("input", markDirty);
+    featuredImageSelect.addEventListener("click", openFeaturedImagePicker);
+    featuredImageRemove.addEventListener("click", function () {
+      updateFeaturedImageUi(null);
+      markDirty();
+    });
+    categoryCheckboxes.forEach(function (checkbox) {
+      checkbox.addEventListener("change", markDirty);
+    });
     saveButton.addEventListener("click", function () {
       savePost({ onlyIfDirty: false, isAutosave: false });
     });

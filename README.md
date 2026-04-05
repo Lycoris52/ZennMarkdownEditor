@@ -64,6 +64,7 @@ ZIP 形式でインストールする場合:
 
 ### 注意
 
+- 使っている Wordpress のテーマによって、記事の表示はうまくいかない場合があります。
 - このプラグインは非公式の独立した WordPress プラグインであり、Zenn.dev とは提携していません。
 - 一部の埋め込みは、X のウィジェット、GitHub API、favicon 取得など、外部サービスへのアクセスに依存します。
 - すべての挙動が完全に Zenn と一致することを保証するものではありませんが、できるだけ細かく近づけることを目指しています。
@@ -162,6 +163,7 @@ The goal is to make WordPress feel close to writing on Zenn.dev, including the c
 
 ## Notes
 
+- Depend on the theme used on the wordpress site, this plugin may be working properly.
 - This is an independent WordPress plugin and is not affiliated with Zenn.dev.
 - Some embeds depend on external services at runtime, such as X widgets, GitHub content APIs, and favicon fetching.
 - Rendering may not be 100% identical to Zenn in every edge case, but the plugin aims to imitate the style and authoring flow in detail.

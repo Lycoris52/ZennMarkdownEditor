@@ -1,11 +1,14 @@
 .mpe-code-shell {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
+  width: 100%;
   margin: 0;
 }
 
 .mpe-code-block {
+  width: 100%;
+  box-sizing: border-box;
   border: 1px solid #30363d;
   border-radius: 8px;
   overflow: hidden;
@@ -33,6 +36,9 @@
 
 .mpe-code-body pre,
 .mpe-code-body .shiki {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0;
   border-radius: 0;
   overflow: auto;
@@ -94,6 +100,8 @@
 
 .mpe-code-body {
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .mpe-code-copy {
