@@ -51,7 +51,7 @@ final class MPE_Plugin {
 			return;
 		}
 
-		$asset_version = '0.1.5';
+		$asset_version = '0.2.0';
 		wp_enqueue_media();
 
 		wp_enqueue_style(
@@ -149,7 +149,7 @@ final class MPE_Plugin {
 	}
 
 	public function enqueue_frontend_assets(): void {
-		$asset_version = '0.1.5';
+		$asset_version = '0.2.0';
 
 		wp_enqueue_style(
 			'mpe-katex',

@@ -3,6 +3,23 @@
   line-height: 1.7;
 }
 
+.mpe-rendered-content > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.mpe-rendered-content > * + * {
+  margin-top: 16px;
+}
+
+.mpe-rendered-content > :first-child {
+  margin-top: 0;
+}
+
+.mpe-rendered-content > :last-child {
+  margin-bottom: 0;
+}
+
 .mpe-rendered-content p,
 .mpe-rendered-content li,
 .mpe-rendered-content blockquote,
@@ -16,7 +33,11 @@
   width: auto;
   max-width: 100%;
   border-collapse: collapse;
-  margin: 16px 0;
+}
+
+.mpe-rendered-content p > img:only-child {
+  display: block;
+  margin: 12px 0;
 }
 
 .mpe-rendered-content th,
@@ -152,7 +173,7 @@
 
 .mpe-rendered-content a.mpe-embed-link .mpe-embed-main {
   display: block;
-  padding: 14px 16px;
+  padding: 18px 16px;
   min-width: 0;
   box-sizing: border-box;
 }
@@ -208,7 +229,7 @@
 .mpe-rendered-content a.mpe-embed-link .mpe-embed-brand {
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding: 20px;
   background: #f6f8fa;
   text-align: center;
   min-width: 0;
@@ -319,6 +340,8 @@
   grid-template-columns: 56px 1fr;
   font-family: Consolas, Monaco, monospace;
   font-size: 13px;
+  color: #24292f;
+  opacity: 1;
 }
 
 .mpe-rendered-content .mpe-github-line-no {
@@ -326,12 +349,17 @@
   color: #57606a;
   text-align: right;
   user-select: none;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .mpe-rendered-content .mpe-github-line-code {
   padding-right: 16px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  color: #24292f;
+  opacity: 1;
 }
 
 .mpe-rendered-content .mpe-embed-gist {
@@ -353,6 +381,8 @@
   grid-template-columns: 56px 1fr;
   font-family: Consolas, Monaco, monospace;
   font-size: 13px;
+  color: #24292f;
+  opacity: 1;
 }
 
 .mpe-rendered-content .mpe-gist-line-no {
@@ -360,12 +390,17 @@
   color: #57606a;
   text-align: right;
   user-select: none;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .mpe-rendered-content .mpe-gist-line-code {
   padding-right: 16px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  color: #24292f;
+  opacity: 1;
 }
 
 .mpe-rendered-content .mpe-gist-footer {

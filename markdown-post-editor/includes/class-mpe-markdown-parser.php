@@ -308,11 +308,25 @@ final class MPE_Markdown_Parser {
 			return self::render_tweet_embed($url);
 		}
 
-		if (strpos($host, 'github.com') !== false) {
+		if (strpos($host, 'gist.github.com') !== false) {
+			return self::render_gist_embed($url);
+		}
+
+		if (strpos($host, 'github.com') !== false && self::is_github_blob_url($url)) {
 			return self::render_github_embed($url);
 		}
 
 		return self::render_card_embed($url, 'mpe-embed-card');
+	}
+
+	private static function is_github_blob_url(string $url): bool {
+		$path = wp_parse_url($url, PHP_URL_PATH);
+		if (!is_string($path) || $path === '') {
+			return false;
+		}
+
+		$parts = array_values(array_filter(explode('/', trim($path, '/'))));
+		return count($parts) >= 5 && $parts[2] === 'blob';
 	}
 
 	private static function render_card_embed(string $url, string $modifier_class): string {

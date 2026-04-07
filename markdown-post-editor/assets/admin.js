@@ -321,6 +321,16 @@
       return `<div class="mpe-embed-gist" data-gist-id="${escapeHtml(match[1])}" data-gist-url="${escapeHtml(url)}"><a class="mpe-embed-link mpe-embed-gist-fallback" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a></div>`;
     }
 
+    function isGitHubBlobUrl(url) {
+      try {
+        const parsed = new URL(url);
+        const parts = parsed.pathname.split("/").filter(Boolean);
+        return parts.length >= 5 && parts[2] === "blob";
+      } catch (error) {
+        return false;
+      }
+    }
+
     function renderEmbedDirective(type, value) {
       const normalizedType = (type || "").trim().toLowerCase();
       if (normalizedType === "youtube") {
@@ -348,7 +358,10 @@
         if (host.indexOf("twitter.com") !== -1 || host.indexOf("x.com") !== -1) {
           return renderTweetEmbed(url);
         }
-        if (host.indexOf("github.com") !== -1) {
+        if (host.indexOf("gist.github.com") !== -1) {
+          return renderGistEmbed(url);
+        }
+        if (host.indexOf("github.com") !== -1 && isGitHubBlobUrl(url)) {
           return `<div class="mpe-embed-github" data-github-url="${escapeHtml(url)}"><a class="mpe-embed-link mpe-embed-github-fallback" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><span class="mpe-embed-label">${escapeHtml(url)}</span></a></div>`;
         }
       } catch (error) {
