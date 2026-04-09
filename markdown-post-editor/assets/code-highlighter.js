@@ -1,5 +1,41 @@
 (function () {
   let shikiShellTemplate = null;
+  let shikiLoader = null;
+
+  function getRuntimeConfig() {
+    return window.MPE_Assets || {};
+  }
+
+  async function ensureShiki() {
+    if (window.MPEShiki && typeof window.MPEShiki.codeToHtml === "function") {
+      return window.MPEShiki;
+    }
+
+    if (!shikiLoader) {
+      const moduleUrl = getRuntimeConfig().shikiModuleUrl;
+      if (!moduleUrl) {
+        throw new Error("Missing Shiki module URL.");
+      }
+
+      shikiLoader = import(moduleUrl).then(function (mod) {
+        const api = {
+          codeToHtml: mod.codeToHtml
+        };
+
+        if (!api.codeToHtml || typeof api.codeToHtml !== "function") {
+          throw new Error("Shiki failed to initialize.");
+        }
+
+        window.MPEShiki = api;
+        return api;
+      }).catch(function (error) {
+        shikiLoader = null;
+        throw error;
+      });
+    }
+
+    return shikiLoader;
+  }
 
   function ensureCopyButton(body) {
     if (!body) {
@@ -93,14 +129,21 @@
     return line ? line.innerHTML : escapeHtml(fallbackLine);
   }
 
+  function normalizeLanguage(lang) {
+    const value = String(lang || "").trim().toLowerCase();
+    return value || "text";
+  }
+
   async function codeToHtml(code, lang) {
+    const shiki = await ensureShiki();
+
     try {
-      return await window.MPEShiki.codeToHtml(code, {
-        lang,
+      return await shiki.codeToHtml(code, {
+        lang: normalizeLanguage(lang),
         theme: "github-dark"
       });
     } catch (error) {
-      return window.MPEShiki.codeToHtml(code, {
+      return shiki.codeToHtml(code, {
         lang: "text",
         theme: "github-dark"
       });
@@ -148,11 +191,6 @@
       return;
     }
 
-    if (!window.MPEShiki || typeof window.MPEShiki.codeToHtml !== "function") {
-      body.dataset.mpeHighlighted = "0";
-      return;
-    }
-
     const code = codeNode.textContent || "";
     const lang = block.dataset.codeLang || "text";
     const mode = block.dataset.codeMode || "";
@@ -180,6 +218,10 @@
   async function highlightWithin(root) {
     const scope = root || document;
     const blocks = scope.querySelectorAll(".mpe-code-shell");
+    if (!blocks.length) {
+      return;
+    }
+
     await Promise.all(Array.from(blocks).map(highlightBlock));
   }
 

@@ -16,6 +16,7 @@ final class MPE_Plugin {
 	private const MENU_SLUG = 'mpe-markdown-posts';
 	private const NONCE_ACTION = 'mpe_editor_nonce';
 	private const MARKDOWN_META_KEY = '_mpe_markdown_source';
+	private const SHIKI_VERSION = '4.0.2';
 	private const KATEX_VERSION = '0.16.25';
 
 	public static function bootstrap(): void {
@@ -51,20 +52,13 @@ final class MPE_Plugin {
 			return;
 		}
 
-		$asset_version = '0.2.0';
+		$asset_version = '0.3.0';
 		wp_enqueue_media();
-
-		wp_enqueue_style(
-			'mpe-katex',
-			plugins_url('assets/katex.min.css', __FILE__),
-			array(),
-			self::KATEX_VERSION
-		);
 
 		wp_enqueue_style(
 			'mpe-code-highlighter',
 			plugins_url('assets/code-highlighter.css', __FILE__),
-			array('mpe-katex'),
+			array(),
 			$asset_version
 		);
 
@@ -76,14 +70,6 @@ final class MPE_Plugin {
 		);
 
 		wp_enqueue_script(
-			'mpe-katex',
-			plugins_url('assets/katex.min.js', __FILE__),
-			array(),
-			self::KATEX_VERSION,
-			true
-		);
-
-		wp_enqueue_script(
 			'mpe-embed-renderer',
 			plugins_url('assets/embed-renderer.js', __FILE__),
 			array(),
@@ -92,17 +78,9 @@ final class MPE_Plugin {
 		);
 
 		wp_enqueue_script(
-			'mpe-shiki-bundle',
-			plugins_url('assets/shiki-bundle.js', __FILE__),
-			array(),
-			$asset_version,
-			true
-		);
-
-		wp_enqueue_script(
 			'mpe-math-renderer',
 			plugins_url('assets/math-renderer.js', __FILE__),
-			array('mpe-katex'),
+			array(),
 			$asset_version,
 			true
 		);
@@ -110,10 +88,13 @@ final class MPE_Plugin {
 		wp_enqueue_script(
 			'mpe-code-highlighter',
 			plugins_url('assets/code-highlighter.js', __FILE__),
-			array('mpe-shiki-bundle'),
+			array(),
 			$asset_version,
 			true
 		);
+
+		$this->localize_runtime_asset_config('mpe-math-renderer');
+		$this->localize_runtime_asset_config('mpe-code-highlighter');
 
 		wp_enqueue_script(
 			'mpe-admin',
@@ -149,19 +130,12 @@ final class MPE_Plugin {
 	}
 
 	public function enqueue_frontend_assets(): void {
-		$asset_version = '0.2.0';
-
-		wp_enqueue_style(
-			'mpe-katex',
-			plugins_url('assets/katex.min.css', __FILE__),
-			array(),
-			self::KATEX_VERSION
-		);
+		$asset_version = '0.3.0';
 
 		wp_enqueue_style(
 			'mpe-code-highlighter',
 			plugins_url('assets/code-highlighter.css', __FILE__),
-			array('mpe-katex'),
+			array(),
 			$asset_version
 		);
 
@@ -173,14 +147,6 @@ final class MPE_Plugin {
 		);
 
 		wp_enqueue_script(
-			'mpe-katex',
-			plugins_url('assets/katex.min.js', __FILE__),
-			array(),
-			self::KATEX_VERSION,
-			true
-		);
-
-		wp_enqueue_script(
 			'mpe-embed-renderer',
 			plugins_url('assets/embed-renderer.js', __FILE__),
 			array(),
@@ -189,17 +155,9 @@ final class MPE_Plugin {
 		);
 
 		wp_enqueue_script(
-			'mpe-shiki-bundle',
-			plugins_url('assets/shiki-bundle.js', __FILE__),
-			array(),
-			$asset_version,
-			true
-		);
-
-		wp_enqueue_script(
 			'mpe-math-renderer',
 			plugins_url('assets/math-renderer.js', __FILE__),
-			array('mpe-katex'),
+			array(),
 			$asset_version,
 			true
 		);
@@ -207,9 +165,37 @@ final class MPE_Plugin {
 		wp_enqueue_script(
 			'mpe-code-highlighter',
 			plugins_url('assets/code-highlighter.js', __FILE__),
-			array('mpe-shiki-bundle', 'mpe-math-renderer', 'mpe-embed-renderer'),
+			array('mpe-math-renderer', 'mpe-embed-renderer'),
 			$asset_version,
 			true
+		);
+
+		$this->localize_runtime_asset_config('mpe-math-renderer');
+		$this->localize_runtime_asset_config('mpe-code-highlighter');
+	}
+
+	private function localize_runtime_asset_config(string $handle): void {
+		wp_add_inline_script(
+			$handle,
+			'window.MPE_Assets = Object.assign({}, window.MPE_Assets || {}, ' . wp_json_encode($this->get_runtime_asset_config()) . ');',
+			'before'
+		);
+	}
+
+	private function get_runtime_asset_config(): array {
+		return array(
+			'katexCssUrl' => sprintf(
+				'https://cdn.jsdelivr.net/npm/katex@%1$s/dist/katex.min.css',
+				rawurlencode(self::KATEX_VERSION)
+			),
+			'katexJsUrl' => sprintf(
+				'https://cdn.jsdelivr.net/npm/katex@%1$s/dist/katex.min.js',
+				rawurlencode(self::KATEX_VERSION)
+			),
+			'shikiModuleUrl' => sprintf(
+				'https://esm.sh/shiki@%1$s/bundle/web?target=es2020',
+				rawurlencode(self::SHIKI_VERSION)
+			),
 		);
 	}
 

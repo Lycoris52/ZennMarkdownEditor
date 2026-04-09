@@ -70,6 +70,7 @@ ZIP 形式でインストールする場合:
 - このプラグインは非公式の独立した WordPress プラグインであり、Zenn.dev とは提携していません。
 - 一部の埋め込みは、X のウィジェット、GitHub API、favicon 取得など、外部サービスへのアクセスに依存します。
 - すべての挙動が完全に Zenn と一致することを保証するものではありませんが、できるだけ細かく近づけることを目指しています。
+- 一部の埋め込み機能は外部サービスへのアクセスに依存します。X.com 埋め込みなど。
 
 ### 未対応
 
@@ -87,12 +88,6 @@ ZIP 形式でインストールする場合:
 
 また、Mermaid.js のダイアグラムにも対応していません。
 
----
-
-補足:
-
-- 数式(KaTeX)やコードハイライト用(Shiki)の主要ライブラリーはプラグイン内に同梱されています。外部からライブラリーダウンロードはありません。
-- 一部の埋め込み機能は外部サービスへのアクセスに依存します。X.com 埋め込みなど。
 
 ---
 ## English
@@ -129,11 +124,6 @@ If you want to install from a zip file:
 1. Zip the `markdown-post-editor` folder.
 2. In WordPress admin, open `Plugins > Add New > Upload Plugin`.
 3. Upload the zip file and activate it.
-
-Notes:
-
-- Core library for math (KaTeX) and code highlighting (Shiki) are already bundled in the plugin.
-- Some embed features still depend on external services at runtime.
 
 ## What It Tries To Reproduce
 
