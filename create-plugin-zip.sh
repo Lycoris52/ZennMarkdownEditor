@@ -13,8 +13,7 @@ rm -f "$ZIP_PATH"
 mkdir -p "$STAGING_DIR/includes" "$STAGING_DIR/assets"
 
 cp "$SCRIPT_DIR/$PLUGIN_SLUG/markdown-post-editor.php" "$STAGING_DIR/"
-cp "$SCRIPT_DIR/$PLUGIN_SLUG/LICENSE" "$STAGING_DIR/"
-cp "$SCRIPT_DIR/$PLUGIN_SLUG/THIRD-PARTY-NOTICES.txt" "$STAGING_DIR/"
+cp "$SCRIPT_DIR/LICENSE" "$STAGING_DIR/"
 cp -R "$SCRIPT_DIR/$PLUGIN_SLUG/includes/." "$STAGING_DIR/includes/"
 cp -R "$SCRIPT_DIR/$PLUGIN_SLUG/assets/." "$STAGING_DIR/assets/"
 
