@@ -42,6 +42,7 @@
   margin: 0;
   border-radius: 0;
   overflow: auto;
+  background: #000 !important;
 }
 
 .mpe-code-body .shiki {
@@ -52,6 +53,7 @@
 .mpe-code-body .shiki code {
   display: block;
   line-height: 0;
+  background: transparent !important;
 }
 
 .mpe-code-body .shiki .line {
@@ -131,6 +133,7 @@
 .mpe-code-body code {
   font-family: Consolas, Monaco, monospace;
   font-size: 13px;
+  background: transparent !important;
 }
 
 .mpe-math-block {
