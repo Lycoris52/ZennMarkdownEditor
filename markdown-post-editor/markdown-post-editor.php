@@ -14,7 +14,9 @@ require_once __DIR__ . '/includes/class-mpe-markdown-parser.php';
 
 final class MPE_Plugin {
 	private const MENU_SLUG = 'mpe-markdown-posts';
+	private const CSS_EDITOR_SLUG = 'mpe-css-editor';
 	private const NONCE_ACTION = 'mpe_editor_nonce';
+	private const CSS_EDITOR_NONCE_ACTION = 'mpe_css_editor_save';
 	private const MARKDOWN_META_KEY = '_mpe_markdown_source';
 	private const SHIKI_VERSION = '4.0.2';
 	private const KATEX_VERSION = '0.16.25';
@@ -45,15 +47,26 @@ final class MPE_Plugin {
 			'dashicons-edit-page',
 			21
 		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__('CSS Editor', 'mpe'),
+			__('CSS Editor', 'mpe'),
+			'manage_options',
+			self::CSS_EDITOR_SLUG,
+			array($this, 'render_css_editor_page')
+		);
 	}
 
 	public function enqueue_admin_assets(string $hook_suffix): void {
-		if ($hook_suffix !== 'toplevel_page_' . self::MENU_SLUG) {
+		$main_hook = 'toplevel_page_' . self::MENU_SLUG;
+		$css_editor_hook = self::MENU_SLUG . '_page_' . self::CSS_EDITOR_SLUG;
+
+		if (!in_array($hook_suffix, array($main_hook, $css_editor_hook), true)) {
 			return;
 		}
 
-		$asset_version = '0.3.1';
-		wp_enqueue_media();
+		$asset_version = '0.3.3';
 
 		wp_enqueue_style(
 			'mpe-code-highlighter',
@@ -68,6 +81,12 @@ final class MPE_Plugin {
 			array('mpe-code-highlighter'),
 			$asset_version
 		);
+
+		if ($hook_suffix !== $main_hook) {
+			return;
+		}
+
+		wp_enqueue_media();
 
 		wp_enqueue_script(
 			'mpe-embed-renderer',
@@ -130,7 +149,7 @@ final class MPE_Plugin {
 	}
 
 	public function enqueue_frontend_assets(): void {
-		$asset_version = '0.3.1';
+		$asset_version = '0.3.3';
 
 		wp_enqueue_style(
 			'mpe-code-highlighter',
@@ -282,6 +301,138 @@ final class MPE_Plugin {
 		}
 
 		echo '</div>';
+	}
+
+	public function render_css_editor_page(): void {
+		if (!current_user_can('manage_options')) {
+			wp_die(esc_html__('You do not have permission to access this page.', 'mpe'));
+		}
+
+		$css_files = $this->get_editable_css_files();
+		if (empty($css_files)) {
+			echo '<div class="wrap mpe-admin-wrap">';
+			echo '<h1>' . esc_html__('CSS Editor', 'mpe') . '</h1>';
+			echo '<div class="notice notice-warning"><p>' . esc_html__('No editable CSS files were found in the assets folder.', 'mpe') . '</p></div>';
+			echo '</div>';
+			return;
+		}
+
+		$requested_file = isset($_REQUEST['css_file']) ? sanitize_file_name(wp_unslash($_REQUEST['css_file'])) : '';
+		$selected_file = $this->resolve_editable_css_file($requested_file, $css_files);
+		$notice = null;
+		$is_error = false;
+
+		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mpe_css_editor_nonce'])) {
+			check_admin_referer(self::CSS_EDITOR_NONCE_ACTION, 'mpe_css_editor_nonce');
+
+			$selected_file = $this->resolve_editable_css_file(
+				isset($_POST['css_file']) ? sanitize_file_name(wp_unslash($_POST['css_file'])) : '',
+				$css_files
+			);
+
+			$result = $this->save_css_editor_file(
+				$selected_file,
+				isset($_POST['css_content']) ? wp_unslash($_POST['css_content']) : ''
+			);
+
+			$notice = $result['message'];
+			$is_error = !$result['success'];
+		}
+
+		$file_contents = $this->read_css_editor_file($selected_file);
+		if ($file_contents === null) {
+			$file_contents = '';
+			$notice = __('The selected CSS file could not be read.', 'mpe');
+			$is_error = true;
+		}
+
+		echo '<div class="wrap mpe-admin-wrap">';
+		echo '<h1>' . esc_html__('CSS Editor', 'mpe') . '</h1>';
+
+		if ($notice !== null) {
+			echo '<div class="notice ' . esc_attr($is_error ? 'notice-error' : 'notice-success') . '"><p>' . esc_html($notice) . '</p></div>';
+		}
+
+		echo '<div class="mpe-css-editor">';
+		echo '<form method="get" class="mpe-css-editor-toolbar">';
+		echo '<input type="hidden" name="page" value="' . esc_attr(self::CSS_EDITOR_SLUG) . '" />';
+		echo '<label for="mpe-css-file-select" class="screen-reader-text">' . esc_html__('CSS file', 'mpe') . '</label>';
+		echo '<select id="mpe-css-file-select" name="css_file">';
+		foreach ($css_files as $css_file) {
+			echo '<option value="' . esc_attr($css_file) . '"' . selected($css_file, $selected_file, false) . '>' . esc_html($css_file) . '</option>';
+		}
+		echo '</select>';
+		echo '<button type="submit" class="button">' . esc_html__('Open File', 'mpe') . '</button>';
+		echo '</form>';
+
+		echo '<form method="post" class="mpe-css-editor-form">';
+		wp_nonce_field(self::CSS_EDITOR_NONCE_ACTION, 'mpe_css_editor_nonce');
+		echo '<input type="hidden" name="css_file" value="' . esc_attr($selected_file) . '" />';
+		echo '<p class="description">' . esc_html__('Only CSS files inside the plugin assets folder can be edited here.', 'mpe') . '</p>';
+		echo '<textarea id="mpe-css-editor-textarea" name="css_content" class="large-text code mpe-css-editor-textarea" spellcheck="false" rows="40" style="height:82vh;min-height:82vh;">' . esc_textarea($file_contents) . '</textarea>';
+		echo '<div class="mpe-css-editor-actions">';
+		echo '<button type="submit" class="button button-primary">' . esc_html__('Save CSS File', 'mpe') . '</button>';
+		echo '<span class="description">' . esc_html($selected_file) . '</span>';
+		echo '</div>';
+		echo '</form>';
+		echo '</div>';
+		echo '</div>';
+	}
+
+	private function get_editable_css_files(): array {
+		$matches = glob(__DIR__ . '/assets/*.css');
+		if (!is_array($matches)) {
+			return array();
+		}
+
+		$files = array_map('basename', $matches);
+		sort($files, SORT_NATURAL | SORT_FLAG_CASE);
+		return $files;
+	}
+
+	private function resolve_editable_css_file(string $requested_file, array $css_files): string {
+		if ($requested_file !== '' && in_array($requested_file, $css_files, true)) {
+			return $requested_file;
+		}
+
+		return (string) reset($css_files);
+	}
+
+	private function get_css_editor_file_path(string $file_name): string {
+		return __DIR__ . '/assets/' . $file_name;
+	}
+
+	private function read_css_editor_file(string $file_name): ?string {
+		$path = $this->get_css_editor_file_path($file_name);
+		if (!is_readable($path)) {
+			return null;
+		}
+
+		$contents = file_get_contents($path);
+		return is_string($contents) ? $contents : null;
+	}
+
+	private function save_css_editor_file(string $file_name, string $contents): array {
+		$path = $this->get_css_editor_file_path($file_name);
+		if (!file_exists($path) || !is_writable($path)) {
+			return array(
+				'success' => false,
+				'message' => __('The selected CSS file is not writable.', 'mpe'),
+			);
+		}
+
+		$result = file_put_contents($path, $contents);
+		if ($result === false) {
+			return array(
+				'success' => false,
+				'message' => __('Saving the CSS file failed.', 'mpe'),
+			);
+		}
+
+		return array(
+			'success' => true,
+			'message' => __('CSS file saved.', 'mpe'),
+		);
 	}
 
 	private function render_list_page(): void {

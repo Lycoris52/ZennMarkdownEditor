@@ -636,6 +636,37 @@
   color: #b32d2e;
 }
 
+.mpe-css-editor {
+  display: grid;
+  gap: 16px;
+  max-width: 1200px;
+}
+
+.mpe-css-editor-toolbar,
+.mpe-css-editor-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mpe-css-editor-form {
+  display: grid;
+  gap: 12px;
+}
+
+.mpe-css-editor-form .mpe-css-editor-textarea {
+  height: 82vh;
+  min-height: 82vh;
+  width: 100%;
+  padding: 16px;
+  resize: vertical;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  box-sizing: border-box;
+}
+
 @keyframes mpe-spin {
   from {
     transform: rotate(0deg);
